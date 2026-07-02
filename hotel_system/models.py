@@ -1,5 +1,6 @@
 ﻿from django.db import models
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from datetime import date
 
 class Room(models.Model):
@@ -19,7 +20,11 @@ class Room(models.Model):
 
 class Guest(models.Model):
     name = models.CharField(max_length=100, verbose_name="Име на госта")
-    phone = models.CharField(max_length=20, verbose_name="Телефон")
+    phone_regex = RegexValidator(
+        regex=r'^\+?[0-9]{7,15}$',
+        message="Телефонният номер трябва да съдържа само цифри и да е между 7 и 15 символа. Допуска се '+' в началото."
+    )
+    phone = models.CharField(validators=[phone_regex], max_length=20, verbose_name="Телефон")
     email = models.EmailField(verbose_name="Имейл адрес")
 
     def __str__(self):
