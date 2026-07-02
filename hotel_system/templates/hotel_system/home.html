@@ -1,11 +1,24 @@
 ﻿<!DOCTYPE html>
-
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="bg">
 <head>
-    <meta charset="utf-8" />
-    <title></title>
+    <meta charset="UTF-8">
+    <title>Хотел Неврокоп</title>
 </head>
 <body>
+    <h1>Добре дошли в Хотел Неврокоп!</h1>
+    <h2>Списък с нашите стаи:</h2>
 
+    <!-- all rooms provided by the view -->
+    <ul>
+        {% for room in rooms %}
+        <li>
+            <strong>Стая {{ room.number }}</strong>
+            - {{ room.get_room_type_display }}
+            (Капацитет: {{ room.capacity }} легла)
+        </li>
+        {% empty %}
+        <li>Все още няма въведени стаи в хотела.</li>
+        {% endfor %}
+    </ul>
 </body>
 </html>
