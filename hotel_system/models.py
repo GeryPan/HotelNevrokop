@@ -13,7 +13,7 @@ class Room(models.Model):
     number = models.CharField(max_length=10, unique=True, verbose_name="Номер на стая")
     room_type = models.CharField(max_length=20, choices=ROOM_TYPES, default='single', verbose_name="Тип стая")
     capacity = models.PositiveIntegerField(verbose_name="Капацитет")
-    
+    price_per_night = models.DecimalField(max_digits=6, decimal_places=2, default=50.00, verbose_name="Цена на нощувка")
     def __str__(self):
         return f"Стая {self.number} ({self.get_room_type_display()})"
 
@@ -38,35 +38,46 @@ class Reservation(models.Model):
     check_in = models.DateField(verbose_name="Дата на настаняване")
     check_out = models.DateField(verbose_name="Дата на напускане")
 
-    def clean(self):
-        if self.check_in and self.check_out:
-            if not self.pk and self.check_in < date.today():
-                raise ValidationError("Датата на настаняване не може да бъде в миналото.")
+    @property
+    def total_price(self):
+        stay_duration = (self.check_out - self.check_in).days
+        # incorrect dates handling
+        if stay_duration <= 0:
+            return 0
             
-            if self.check_out <= self.check_in:
-                raise ValidationError("Датата на напускане трябва да е след датата на настаняване.")
-            
-            if self.number_of_guests < 1:
-                raise ValidationError("Нужен е поне един гост да има.")
-            
-            # NoneType error if room is not selected
-            if self.room and self.number_of_guests > self.room.capacity:
-                raise ValidationError(
-                    f"Броят гости ({self.number_of_guests}) надвишава капацитета на стаята ({self.room.capacity} легла)."
-                )
-            
-            overlapping_reservations = Reservation.objects.filter(
-                room=self.room,
-                check_in__lt=self.check_out,
-                check_out__gt=self.check_in
-            )
-            
-            if self.pk:
-                overlapping_reservations = overlapping_reservations.exclude(pk=self.pk)
-                
-            if overlapping_reservations.exists():
-                raise ValidationError("Внимание: Тази стая вече е резервирана за избрания период!")
+        return stay_duration * self.room.price_per_night
 
+    def clean(self):
+        # if fields are missing
+        if not self.check_in or not self.check_out or not self.room:
+            return
+
+        # past check-in date
+        if not self.pk and self.check_in < date.today():
+            raise ValidationError("Датата на настаняване не може да бъде в миналото.")
+        
+        if self.check_out <= self.check_in:
+            raise ValidationError("Датата на напускане трябва да е след датата на настаняване.")
+        
+        if self.number_of_guests < 1:
+            raise ValidationError("Нужен е поне един гост да има.")
+        
+        if self.number_of_guests > self.room.capacity:
+            raise ValidationError(
+                f"Броят гости ({self.number_of_guests}) надвишава капацитета на стаята ({self.room.capacity} легла)."
+            )
+        
+        overlapping_reservations = Reservation.objects.filter(
+            room=self.room,
+            check_in__lt=self.check_out,
+            check_out__gt=self.check_in
+        )
+        
+        if self.pk:
+            overlapping_reservations = overlapping_reservations.exclude(pk=self.pk)
+            
+        if overlapping_reservations.exists():
+            raise ValidationError("Внимание: Тази стая вече е резервирана за избрания период!")
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
