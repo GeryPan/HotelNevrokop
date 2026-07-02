@@ -2,6 +2,6 @@
 from . import views
 
 urlpatterns = [
-    # Route for the main home page
+    # Main home page route
     path('', views.home, name='home'),
 ]
