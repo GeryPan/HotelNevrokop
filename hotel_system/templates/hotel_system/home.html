@@ -43,14 +43,20 @@
                             <div class="col-12">
                                 <!-- our rooms -->
                                 <div class="p-3 border rounded bg-white shadow-xs">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h5 class="text-primary mb-0">Стая {{ room.number }}</h5>
-                                        <!-- dinamic status for cleaning -->
-                                        {% if room.is_cleaned_today %}
-                                        <span class="badge bg-success">✨ Готова за настаняване</span>
-                                        {% else %}
-                                        <span class="badge bg-warning text-dark">🧹 В процес на подготовка</span>
-                                        {% endif %}
+                                        <div class="text-end">
+                                            <!-- dinamic status for cleaning -->
+                                            {% if room.is_cleaned_today %}
+                                            <span class="badge bg-success">✨ Готова за настаняване</span>
+                                            <!-- housecleaner name -->
+                                            <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                                                Почистена от: {{ room.today_cleaner }}
+                                            </small>
+                                            {% else %}
+                                            <span class="badge bg-warning text-dark">🧹 В процес на подготовка</span>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     <p class="mb-1"><strong>Тип:</strong> {{ room.get_room_type_display }}</p>
                                     <p class="mb-1"><strong>Капацитет:</strong> {{ room.capacity }} легла</p>

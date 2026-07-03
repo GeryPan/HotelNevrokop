@@ -19,6 +19,11 @@ class Room(models.Model):
     def is_cleaned_today(self):
         return self.housekeeping_set.filter(date=date.today(), is_cleaned=True).exists()
 
+    @property
+    def today_cleaner(self):
+        last_cleaning = self.housekeeping_set.filter(date=date.today(), is_cleaned=True).last()
+        return last_cleaning.cleaner_name if last_cleaning else None
+
     def __str__(self):
         return f"Стая {self.number} ({self.get_room_type_display()})"
 
