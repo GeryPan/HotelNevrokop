@@ -7,6 +7,17 @@
 <body>
     <h1>Добре дошли в Хотел Неврокоп!</h1>
 
+    <!-- message block -->
+    {% if messages %}
+    <div>
+        {% for message in messages %}
+        <p style="padding: 10px; border: 2px solid {% if message.tags == 'error' %}red{% else %}green{% endif %}; color: {% if message.tags == 'error' %}red{% else %}green{% endif %}; font-weight: bold;">
+            {{ message }}
+        </p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <h2>Списък с нашите стаи:</h2>
     <ul>
         {% for room in rooms %}
@@ -24,7 +35,6 @@
     <hr>
 
     <h2>Направете резервация:</h2>
-    <!-- Django form for submitting new reservations -->
     <form method="POST">
         {% csrf_token %}
         {{ form.as_p }}
