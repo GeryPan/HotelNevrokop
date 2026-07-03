@@ -153,3 +153,48 @@ class HotelSystemTests(TestCase):
         new_item = RoomServiceItem.objects.create(name="Енергийна напитка", price=5.50)
         self.assertEqual(RoomServiceItem.objects.count(), 30)
         self.assertEqual(new_item.price, 5.50)
+
+    # negative price for room should raise ValidationError
+    def test_16_room_negative_price_raises_error(self):
+        bad_room = Room(number="102", room_type="double", capacity=2, price_per_night=-20.00)
+        with self.assertRaises(ValidationError):
+            bad_room.full_clean() # Очакваме Django да хване отрицателната цена
+
+    # invalid email for guest should raise ValidationError
+    def test_17_guest_invalid_email_raises_error(self):
+        bad_guest = Guest(name="Петър", phone="0888999777", email="petar-invalid-email.com")
+        with self.assertRaises(ValidationError):
+            bad_guest.full_clean() # Очакваме грешка, защото няма '@' и правилен домейн
+
+    # check-out -> check-in in the same day reservations should be allowed
+    def test_18_back_to_back_reservations_allowed(self):
+        Reservation.objects.create(
+            room=self.room, guest=self.guest, number_of_guests=1,
+            check_in=date.today() + timedelta(days=1),
+            check_out=date.today() + timedelta(days=3)
+        )
+        new_res = Reservation(
+            room=self.room, guest=self.guest, number_of_guests=1,
+            check_in=date.today() + timedelta(days=3),
+            check_out=date.today() + timedelta(days=5)
+        )
+        try:
+            new_res.clean()
+        except ValidationError:
+            self.fail("Резервация 'гръб в гръб' хвърли неочаквана ValidationError. Проблем с логиката за напускане-настаняване!")
+
+    # changing housekeeping status from False to True should be reflected in the database
+    def test_19_housekeeping_status_update(self):
+        cleaning = Housekeeping.objects.create(
+            room=self.room, date=date.today(), is_cleaned=False
+        )
+        self.assertFalse(cleaning.is_cleaned)
+        cleaning.is_cleaned = True
+        cleaning.save()
+        self.assertTrue(Housekeeping.objects.get(id=cleaning.id).is_cleaned)
+
+    # negaative price for product should raise ValidationError
+    def test_20_item_negative_price_raises_error(self):
+        bad_item = RoomServiceItem(name="Безплатен обяд", price=-5.00)
+        with self.assertRaises(ValidationError):
+            bad_item.full_clean()
