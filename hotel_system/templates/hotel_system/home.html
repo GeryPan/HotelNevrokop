@@ -6,19 +6,30 @@
 </head>
 <body>
     <h1>Добре дошли в Хотел Неврокоп!</h1>
-    <h2>Списък с нашите стаи:</h2>
 
-    <!-- all rooms provided by the view -->
+    <h2>Списък с нашите стаи:</h2>
     <ul>
         {% for room in rooms %}
         <li>
             <strong>Стая {{ room.number }}</strong>
             - {{ room.get_room_type_display }}
             (Капацитет: {{ room.capacity }} легла)
+            - Цена: {{ room.price_per_night }} лв.
         </li>
         {% empty %}
         <li>Все още няма въведени стаи в хотела.</li>
         {% endfor %}
     </ul>
+
+    <hr>
+
+    <h2>Направете резервация:</h2>
+    <!-- Django form for submitting new reservations -->
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Резервирай сега</button>
+    </form>
+
 </body>
 </html>
