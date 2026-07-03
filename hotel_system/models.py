@@ -84,3 +84,22 @@ class Reservation(models.Model):
 
     def __str__(self):
         return f"Резервация на {self.guest.name} за Стая {self.room.number} ({self.check_in} до {self.check_out})"
+
+
+class Housekeeping(models.Model):
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, verbose_name="Стая")
+    date = models.DateField(default=date.today, verbose_name="Дата на почистване")
+    is_cleaned = models.BooleanField(default=False, verbose_name="Почистена")
+    notes = models.TextField(blank=True, verbose_name="Бележки от камериерката")
+
+    def clean(self):
+        if self.date > date.today():
+            raise ValidationError("Датата на почистване не може да бъде в бъдещето.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        status = "Изчистена" if self.is_cleaned else "За почистване"
+        return f"Стая {self.room.number} - {self.date} ({status})"
