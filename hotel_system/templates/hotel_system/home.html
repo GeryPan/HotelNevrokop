@@ -17,7 +17,7 @@
     </nav>
 
     <div class="container">
-        <!-- Messages Section -->
+        <!-- Messages Section (Success / Errors) -->
         {% if messages %}
         <div class="row">
             <div class="col-12">
@@ -41,15 +41,12 @@
                         <div class="row g-3">
                             {% for room in rooms %}
                             <div class="col-12">
-                                <!-- our rooms -->
                                 <div class="p-3 border rounded bg-white shadow-xs">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h5 class="text-primary mb-0">Стая {{ room.number }}</h5>
                                         <div class="text-end">
-                                            <!-- dinamic status for cleaning -->
                                             {% if room.is_cleaned_today %}
                                             <span class="badge bg-success">✨ Готова за настаняване</span>
-                                            <!-- specific cleaner name -->
                                             <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
                                                 Почистена от: {{ room.today_cleaner }}
                                             </small>
@@ -60,7 +57,7 @@
                                     </div>
                                     <p class="mb-1"><strong>Тип:</strong> {{ room.get_room_type_display }}</p>
                                     <p class="mb-1"><strong>Капацитет:</strong> {{ room.capacity }} легла</p>
-                                    <p class="mb-0 text-success fw-bold">Цена: {{ room.price_per_night }} лв. / нощ</p>
+                                    <p class="mb-0 text-success fw-bold">Цена: <span class="room-price-data" data-room-id="{{ room.id }}">{{ room.price_per_night }}</span> лв. / нощ</p>
 
                                     {% if room.active_room_service_total > 0 %}
                                     <p class="mb-0 text-danger fw-bold" style="font-size: 0.9rem;">🍹 Рум сервиз сметка: {{ room.active_room_service_total }} лв.</p>
@@ -87,9 +84,16 @@
                         <form method="POST">
                             {% csrf_token %}
 
-                            <!-- Rendering fields with basic Bootstrap utility styling spacing -->
+                            <!-- Bootstrap utility styling spacing -->
                             <div class="mb-3">
                                 {{ form.as_p }}
+                            </div>
+
+                            <!-- Dynamic final price indicator -->
+                            <div class="p-3 mb-3 bg-light border rounded text-end">
+                                <span class="text-muted">Цена за престой:</span>
+                                <h3 class="text-success mb-0 fw-bold" id="live-total-price">0.00 лв.</h3>
+                                <small class="text-muted" id="price-breakdown"></small>
                             </div>
 
                             <button type="submit" name="submit_reservation" class="btn btn-success w-100 py-2 fw-bold">
@@ -99,7 +103,7 @@
                     </div>
                 </div>
 
-                <!-- room service -->
+                <!-- Room service -->
                 <div class="card shadow-sm border-danger mt-4">
                     <div class="card-header bg-danger text-white">
                         <h4 class="mb-0">🍹 Поръчай Рум Сервиз</h4>
@@ -107,24 +111,104 @@
                     <div class="card-body">
                         <form method="POST">
                             {% csrf_token %}
-                            
+
                             <div class="mb-3">
                                 {{ order_form.as_p }}
                             </div>
-                            
+
+                            <div class="p-3 mb-3 bg-light border rounded text-end">
+                                <span class="text-muted">Сметка за поръчката:</span>
+                                <h3 class="text-danger mb-0 fw-bold" id="live-order-price">0.00 лв.</h3>
+                                <small class="text-muted" id="order-breakdown">Изберете продукт и количество</small>
+                            </div>
+
                             <button type="submit" name="submit_order" class="btn btn-danger w-100 py-2 fw-bold">
-                                🚀 Изпрати поръчката
+                                Изпрати поръчката
                             </button>
                         </form>
                     </div>
                 </div>
-                <!-- ======================================= -->
 
-            </div> <!-- close booking form -->
-        </div> <!-- close row -->
-    </div> <!-- close container -->
-
-    <!-- Bootstrap Bundle with Popper -->
+            </div> <!-- Close booking forms -->
+        </div> <!-- Clsoe row -->
+    </div> <!-- Close container -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- calculating the final price in real time -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // calculate live price for reservation
+            const roomSelect = document.querySelector('select[name="room"]');
+            const checkInInput = document.querySelector('input[name="check_in"]');
+            const checkOutInput = document.querySelector('input[name="check_out"]');
+            const liveTotalText = document.getElementById('live-total-price');
+            const breakdownText = document.getElementById('price-breakdown');
+
+            const roomPrices = {};
+            document.querySelectorAll('.room-price-data').forEach(span => {
+                roomPrices[span.getAttribute('data-room-id')] = parseFloat(span.innerText);
+            });
+
+            function calculateLivePrice() {
+                const roomId = roomSelect ? roomSelect.value : null;
+                const checkInDate = checkInInput ? new Date(checkInInput.value) : null;
+                const checkOutDate = checkOutInput ? new Date(checkOutInput.value) : null;
+
+                if (roomId && roomPrices[roomId] && checkInDate && checkOutDate && checkOutDate > checkInDate) {
+                    const pricePerNight = roomPrices[roomId];
+                    const timeDiff = checkOutDate.getTime() - checkInDate.getTime();
+                    const nights = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+                    if (nights > 0) {
+                        const totalPrice = nights * pricePerNight;
+                        liveTotalText.innerText = totalPrice.toFixed(2) + ' лв.';
+                        breakdownText.innerText = `${nights} нощувки x ${pricePerNight.toFixed(2)} лв.`;
+                        return;
+                    }
+                }
+                liveTotalText.innerText = '0.00 лв.';
+                breakdownText.innerText = 'Изберете стая и валидни дати';
+            }
+
+            if (roomSelect) roomSelect.addEventListener('change', calculateLivePrice);
+            if (checkInInput) checkInInput.addEventListener('change', calculateLivePrice);
+            if (checkOutInput) checkOutInput.addEventListener('change', calculateLivePrice);
+
+            // calculate the price on page load in case of pre-filled values
+            const itemSelect = document.querySelector('select[name="item"]');
+            const quantityInput = document.querySelector('input[name="quantity"]');
+            const liveOrderText = document.getElementById('live-order-price');
+            const orderBreakdownText = document.getElementById('order-breakdown');
+
+            function calculateLiveOrderPrice() {
+                const quantity = quantityInput ? parseInt(quantityInput.value) : 0;
+
+                if (itemSelect && itemSelect.selectedIndex > 0 && quantity > 0) {
+                    // get the selected option's text
+                    const selectedText = itemSelect.options[itemSelect.selectedIndex].text;
+                    // price is expected to be in the format "Product Name - 12.50 лв."
+                    const priceMatch = selectedText.match(/([\d.]+)\s*лв\./);
+
+                    if (priceMatch && priceMatch[1]) {
+                        const unitPrice = parseFloat(priceMatch[1]);
+                        const totalOrderPrice = unitPrice * quantity;
+
+                        liveOrderText.innerText = totalOrderPrice.toFixed(2) + ' лв.';
+                        orderBreakdownText.innerText = `${quantity} бр. x ${unitPrice.toFixed(2)} лв.`;
+                        return;
+                    }
+                }
+                liveOrderText.innerText = '0.00 лв.';
+                orderBreakdownText.innerText = 'Изберете продукт и количество';
+            }
+
+            if (itemSelect) itemSelect.addEventListener('change', calculateLiveOrderPrice);
+            if (quantityInput) quantityInput.addEventListener('input', calculateLiveOrderPrice);
+
+            calculateLivePrice();
+            calculateLiveOrderPrice();
+        });
+    </script>
 </body>
 </html>
