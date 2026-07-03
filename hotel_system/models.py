@@ -95,7 +95,8 @@ class Housekeeping(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, verbose_name="Стая")
     date = models.DateField(default=date.today, verbose_name="Дата на почистване")
     is_cleaned = models.BooleanField(default=False, verbose_name="Почистена")
-    notes = models.TextField(blank=True, verbose_name="Бележки от камериерката")
+    cleaner_name = models.CharField(max_length=100, default="Дежурна камериерка", verbose_name="Име на камериерка")
+    notes = models.TextField(blank=True, verbose_name="Бележки")
 
     def clean(self):
         if self.date > date.today():
@@ -107,4 +108,4 @@ class Housekeeping(models.Model):
 
     def __str__(self):
         status = "Изчистена" if self.is_cleaned else "За почистване"
-        return f"Стая {self.room.number} - {self.date} ({status})"
+        return f"Стая {self.room.number} - {self.cleaner_name} ({status})"
