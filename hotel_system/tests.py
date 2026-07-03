@@ -1,7 +1,7 @@
 ﻿from django.test import TestCase
 from django.core.exceptions import ValidationError
 from datetime import date, timedelta
-from .models import Room, Guest, Reservation, Housekeeping
+from .models import Room, Guest, Reservation, Housekeeping, RoomServiceItem, RoomServiceOrder
 
 class HotelSystemTests(TestCase):
     def setUp(self):
@@ -10,6 +10,15 @@ class HotelSystemTests(TestCase):
         )
         self.guest = Guest.objects.create(
             name="Иван Иванов", phone="0888123456", email="ivan@example.com"
+        )
+        self.whiskey, _ = RoomServiceItem.objects.get_or_create(
+            name="Шотландско уиски (50ml)", defaults={'price': 8.00}
+        )
+        self.chips, _ = RoomServiceItem.objects.get_or_create(
+            name="Чипс Голям", defaults={'price': 3.50}
+        )
+        self.cola, _ = RoomServiceItem.objects.get_or_create(
+            name="Кока-Кола", defaults={'price': 3.00}
         )
 
     # reservation tests
@@ -106,22 +115,41 @@ class HotelSystemTests(TestCase):
 
     # room service tests
     def test_12_room_service_order_calculation(self):
-        # create a reservation for the room
         res = Reservation.objects.create(
             room=self.room, guest=self.guest, number_of_guests=1,
             check_in=date.today(), check_out=date.today() + timedelta(days=2)
         )
         order = RoomServiceOrder.objects.create(
-            reservation=res, item='whiskey_scot', quantity=3
+            reservation=res, item=self.whiskey, quantity=3
         )
         self.assertEqual(order.order_total, 24.00)
 
-    def test_13_room_active_service_total(self):
+    # check if room.active_room_service_total is calculated correctly
+    def test_13_room_active_service_total(self): 
         res = Reservation.objects.create(
             room=self.room, guest=self.guest, number_of_guests=1,
             check_in=date.today(), check_out=date.today() + timedelta(days=2)
         )
-        RoomServiceOrder.objects.create(reservation=res, item='chips', quantity=1)
-        RoomServiceOrder.objects.create(reservation=res, item='cola', quantity=1)
+        RoomServiceOrder.objects.create(reservation=res, item=self.chips, quantity=1)
+        RoomServiceOrder.objects.create(reservation=res, item=self.cola, quantity=1)
         
         self.assertEqual(self.room.active_room_service_total, 6.50)
+
+    def test_14_zero_quantity_raises_error(self):
+        res = Reservation.objects.create(
+            room=self.room, guest=self.guest, number_of_guests=1,
+            check_in=date.today(), check_out=date.today() + timedelta(days=2)
+        )
+        # Опит за поръчка с невалидно количество (0)
+        bad_order = RoomServiceOrder(
+            reservation=res, item=self.cola, quantity=0
+        )
+        # Трябва да хвърли ValidationError при извикване на clean()
+        with self.assertRaises(ValidationError):
+            bad_order.clean()
+
+    # test if new menu item can be created
+    def test_15_menu_item_creation(self):
+        new_item = RoomServiceItem.objects.create(name="Енергийна напитка", price=5.50)
+        self.assertEqual(RoomServiceItem.objects.count(), 30)
+        self.assertEqual(new_item.price, 5.50)
