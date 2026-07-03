@@ -41,8 +41,17 @@
                         <div class="row g-3">
                             {% for room in rooms %}
                             <div class="col-12">
+                                <!-- our rooms -->
                                 <div class="p-3 border rounded bg-white shadow-xs">
-                                    <h5 class="text-primary">Стая {{ room.number }}</h5>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h5 class="text-primary mb-0">Стая {{ room.number }}</h5>
+                                        <!-- dinamic status for cleaning -->
+                                        {% if room.is_cleaned_today %}
+                                        <span class="badge bg-success">✨ Готова за настаняване</span>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">🧹 В процес на подготовка</span>
+                                        {% endif %}
+                                    </div>
                                     <p class="mb-1"><strong>Тип:</strong> {{ room.get_room_type_display }}</p>
                                     <p class="mb-1"><strong>Капацитет:</strong> {{ room.capacity }} легла</p>
                                     <p class="mb-0 text-success fw-bold">Цена: {{ room.price_per_night }} лв. / нощ</p>

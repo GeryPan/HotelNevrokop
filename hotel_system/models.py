@@ -14,6 +14,11 @@ class Room(models.Model):
     room_type = models.CharField(max_length=20, choices=ROOM_TYPES, default='single', verbose_name="Тип стая")
     capacity = models.PositiveIntegerField(verbose_name="Капацитет")
     price_per_night = models.DecimalField(max_digits=6, decimal_places=2, default=50.00, verbose_name="Цена на нощувка")
+
+    @property
+    def is_cleaned_today(self):
+        return self.housekeeping_set.filter(date=date.today(), is_cleaned=True).exists()
+
     def __str__(self):
         return f"Стая {self.number} ({self.get_room_type_display()})"
 
