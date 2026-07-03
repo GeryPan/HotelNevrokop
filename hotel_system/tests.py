@@ -103,3 +103,25 @@ class HotelSystemTests(TestCase):
         )
         with self.assertRaises(ValidationError):
             cleaning.clean()
+
+    # room service tests
+    def test_12_room_service_order_calculation(self):
+        # create a reservation for the room
+        res = Reservation.objects.create(
+            room=self.room, guest=self.guest, number_of_guests=1,
+            check_in=date.today(), check_out=date.today() + timedelta(days=2)
+        )
+        order = RoomServiceOrder.objects.create(
+            reservation=res, item='whiskey_scot', quantity=3
+        )
+        self.assertEqual(order.order_total, 24.00)
+
+    def test_13_room_active_service_total(self):
+        res = Reservation.objects.create(
+            room=self.room, guest=self.guest, number_of_guests=1,
+            check_in=date.today(), check_out=date.today() + timedelta(days=2)
+        )
+        RoomServiceOrder.objects.create(reservation=res, item='chips', quantity=1)
+        RoomServiceOrder.objects.create(reservation=res, item='cola', quantity=1)
+        
+        self.assertEqual(self.room.active_room_service_total, 6.50)

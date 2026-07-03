@@ -20,6 +20,14 @@ class Room(models.Model):
         return self.housekeeping_set.filter(date=date.today(), is_cleaned=True).exists()
 
     @property
+    def active_room_service_total(self):
+        # currnet reservation for the room
+        current_res = self.reservation_set.order_by('-check_in').first()
+        if current_res:
+            return sum(order.order_total for order in current_res.roomserviceorder_set.all())
+        return 0
+
+    @property
     def today_cleaner(self):
         last_cleaning = self.housekeeping_set.filter(date=date.today(), is_cleaned=True).last()
         return last_cleaning.cleaner_name if last_cleaning else None
@@ -114,3 +122,61 @@ class Housekeeping(models.Model):
     def __str__(self):
         status = "Изчистена" if self.is_cleaned else "За почистване"
         return f"Стая {self.room.number} - {self.cleaner_name} ({status})"
+
+
+class RoomServiceOrder(models.Model):
+    MENU_ITEMS = [
+        # Alcohol
+        ('wine_white', 'Бяло вино (бутилка) - 20.00 лв.'),
+        ('wine_red', 'Червено вино (бутилка) - 22.00 лв.'),
+        ('whiskey_scot', 'Шотландско уиски (50ml) - 8.00 лв.'),
+        ('whiskey_irish', 'Ирландско уиски (50ml) - 7.50 лв.'),
+        ('vodka', 'Водка Премиум (50ml) - 6.00 лв.'),
+        ('champagne', 'Шампанско (бутилка) - 25.00 лв.'),
+        ('rakia', 'Домашна ракия (50ml) - 5.00 лв.'),
+        ('mastika', 'Мастика (50ml) - 4.50 лв.'),
+        ('ouzo', 'Узо (50ml) - 5.00 лв.'),
+        # Snacks
+        ('nuts', 'Микс ядки - 5.00 лв.'),
+        ('chocolate', 'Шоколад - 4.00 лв.'),
+        ('pretzels', 'Солети - 1.50 лв.'),
+        ('chips', 'Чипс Голям - 3.50 лв.'),
+        # Drinks
+        ('juice', 'Натурален сок - 3.50 лв.'),
+        ('water', 'Минерална вода - 2.00 лв.'),
+        ('cola', 'Кока-Кола - 3.00 лв.'),
+        ('fanta', 'Фанта - 3.00 лв.'),
+        ('sprite', 'Спрайт - 3.00 лв.'),
+        ('lemonade', 'Домашна лимонада - 4.50 лв.'),
+        ('coffee', 'Кафе Еспресо - 2.50 лв.'),
+        ('cappuccino', 'Капучино - 3.50 лв.'),
+        ('tea', 'Билков чай - 2.50 лв.'),
+        ('frappe', 'Фрапе - 4.00 лв.'),
+        # And other things
+        ('slice_lemon', 'Резенчета лимон - 0.10 лв.'),
+        ('ice', 'Лед - 0.00 лв.', ),
+        ('milk', 'Прясно мляко (30ml) - 0.50 лв.'),
+        ('ice_cream', 'Сладолед (1 топка) - 3.00 лв.'),
+        ('cream', 'Сметана (20ml) - 0.50 лв.'),
+    ]
+
+    PRICES = {
+        'wine_white': 20.00, 'wine_red': 22.00, 'whiskey_scot': 8.00, 'whiskey_irish': 7.50,
+        'vodka': 6.00, 'champagne': 25.00, 'rakia': 5.00, 'mastika': 4.50, 'ouzo': 5.00,
+        'nuts': 5.00, 'chocolate': 4.00, 'pretzels': 1.50, 'chips': 3.50,
+        'juice': 3.50, 'water': 2.00, 'cola': 3.00, 'fanta': 3.00, 'sprite': 3.00,
+        'lemonade': 4.50, 'coffee': 2.50, 'cappuccino': 3.50, 'tea': 2.50, 'frappe': 4.00,
+        'slice_lemon': 0.10, 'ice' : 0.00, 'milk': 0.50, 'ice_cream': 3.00, 'cream': 0.50
+    }
+
+    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE, verbose_name="Резервация за стая")
+    item = models.CharField(max_length=50, choices=MENU_ITEMS, verbose_name="Продукт")
+    quantity = models.PositiveIntegerField(default=1, verbose_name="Количество")
+    ordered_at = models.DateTimeField(auto_now_add=True, verbose_name="Час на поръчка")
+
+    @property
+    def order_total(self):
+        return self.PRICES.get(self.item, 0.00) * self.quantity
+
+    def __str__(self):
+        return f"Стая {self.reservation.room.number} - {self.get_item_display()} x{self.quantity}"

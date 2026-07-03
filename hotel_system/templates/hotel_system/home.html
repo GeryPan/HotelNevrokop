@@ -49,7 +49,7 @@
                                             <!-- dinamic status for cleaning -->
                                             {% if room.is_cleaned_today %}
                                             <span class="badge bg-success">✨ Готова за настаняване</span>
-                                            <!-- housecleaner name -->
+                                            <!-- specific cleaner name -->
                                             <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
                                                 Почистена от: {{ room.today_cleaner }}
                                             </small>
@@ -61,6 +61,10 @@
                                     <p class="mb-1"><strong>Тип:</strong> {{ room.get_room_type_display }}</p>
                                     <p class="mb-1"><strong>Капацитет:</strong> {{ room.capacity }} легла</p>
                                     <p class="mb-0 text-success fw-bold">Цена: {{ room.price_per_night }} лв. / нощ</p>
+
+                                    {% if room.active_room_service_total > 0 %}
+                                    <p class="mb-0 text-danger fw-bold" style="font-size: 0.9rem;">🍹 Рум сервиз сметка: {{ room.active_room_service_total }} лв.</p>
+                                    {% endif %}
                                 </div>
                             </div>
                             {% empty %}
