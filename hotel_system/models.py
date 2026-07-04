@@ -1,7 +1,9 @@
 ﻿from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
+from django.core.validators import MinValueValidator
 from datetime import date
+from decimal import Decimal
 
 class Room(models.Model):
     ROOM_TYPES = [
@@ -9,11 +11,16 @@ class Room(models.Model):
         ('double', 'Двойна стая'),
         ('suite', 'Апартамент'),
     ]
-    
     number = models.CharField(max_length=10, unique=True, verbose_name="Номер на стая")
     room_type = models.CharField(max_length=20, choices=ROOM_TYPES, default='single', verbose_name="Тип стая")
     capacity = models.PositiveIntegerField(verbose_name="Капацитет")
-    price_per_night = models.DecimalField(max_digits=6, decimal_places=2, default=50.00, verbose_name="Цена на нощувка")
+    price_per_night = models.DecimalField(
+        max_digits=6, 
+        decimal_places=2, 
+        default=50.00, 
+        verbose_name="Цена на нощувка",
+        validators=[MinValueValidator(Decimal('0.00'))]
+    )
 
     @property
     def is_cleaned_today(self):
@@ -42,7 +49,7 @@ class Guest(models.Model):
         regex=r'^\+?[0-9]{7,15}$',
         message="Телефонният номер трябва да съдържа само цифри и да е между 7 и 15 символа. Допуска се '+' в началото."
     )
-    phone = models.CharField(validators=[phone_regex], max_length=20, verbose_name="Телефон")
+    phone = models.CharField(validators=[phone_regex], max_length=20, verbose_name="Телефонен номер")
     email = models.EmailField(verbose_name="Имейл адрес")
 
     def __str__(self):
@@ -126,7 +133,12 @@ class Housekeeping(models.Model):
 
 class RoomServiceItem(models.Model):
     name = models.CharField(max_length=100, verbose_name="Име на продукта")
-    price = models.DecimalField(max_digits=6, decimal_places=2, verbose_name="Цена (лв.)")
+    price = models.DecimalField(
+        max_digits=6, 
+        decimal_places=2, 
+        verbose_name="Цена (лв.)",
+        validators=[MinValueValidator(Decimal('0.00'))]
+    )
 
     def __str__(self):
         return f"{self.name} - {self.price} лв."
