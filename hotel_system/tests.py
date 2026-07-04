@@ -151,16 +151,9 @@ class HotelSystemTests(TestCase):
 
     # test if new menu item can be created
     def test_15_menu_item_creation(self):
-    # 1. Вземи текущия брой на елементите преди създаването
         initial_count = RoomServiceItem.objects.count()
-    
-    # 2. Създай новия артикул
         new_item = RoomServiceItem.objects.create(name="Енергийна напитка", price=5.50)
-    
-    # 3. Сравни текущия брой с първоначалния + 1
         self.assertEqual(RoomServiceItem.objects.count(), initial_count + 1)
-    
-    # Проверка на цената
         self.assertEqual(new_item.price, 5.50)
 
     # negative price for room should raise ValidationError
