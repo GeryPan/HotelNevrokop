@@ -150,10 +150,10 @@ class HotelSystemTests(TestCase):
             bad_order.clean()
 
     # test if new menu item can be created
-    """def test_15_menu_item_creation(self):
-        new_item = RoomServiceItem.objects.create(name="Енергийна напитка", price=5.50)
-        self.assertEqual(RoomServiceItem.objects.count(), 30)
-        self.assertEqual(new_item.price, 5.50)"""
+    def test_15_menu_item_creation(self):
+        new_item = RoomServiceItem.objects.create(name="Айрян", price=2.50)
+        self.assertEqual(RoomServiceItem.objects.count(), 29)
+        self.assertEqual(new_item.price, 2.50)
 
     # negative price for room should raise ValidationError
     def test_16_room_negative_price_raises_error(self):
